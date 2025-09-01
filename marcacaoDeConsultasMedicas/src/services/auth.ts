@@ -8,35 +8,15 @@ const STORAGE_KEYS = {
   REGISTERED_USERS: '@MedicalApp:registeredUsers',
 };
 
-// Médicos mockados que podem fazer login
+// ⚠️ DADOS MOCKADOS - MANTIDOS APENAS PARA COMPATIBILIDADE COM COMPONENTES ANTIGOS
+// TODO: Remover quando todos os componentes estiverem usando authApiService
+
+// Médicos mockados (DEPRECATED - usar authApiService.getAllDoctors())
 const mockDoctors = [
-  {
-    id: '1',
-    name: 'Dr. João Silva',
-    email: 'joao@example.com',
-    role: 'doctor' as const,
-    specialty: 'Cardiologia',
-    image: 'https://randomuser.me/api/portraits/men/1.jpg',
-  },
-  {
-    id: '2',
-    name: 'Dra. Maria Santos',
-    email: 'maria@example.com',
-    role: 'doctor' as const,
-    specialty: 'Pediatria',
-    image: 'https://randomuser.me/api/portraits/women/1.jpg',
-  },
-  {
-    id: '3',
-    name: 'Dr. Pedro Oliveira',
-    email: 'pedro@example.com',
-    role: 'doctor' as const,
-    specialty: 'Ortopedia',
-    image: 'https://randomuser.me/api/portraits/men/2.jpg',
-  },
+  // Dados removidos - agora vêm da API
 ];
 
-// Admin mockado
+// Admin mockado (DEPRECATED - usar authApiService)
 const mockAdmin = {
   id: 'admin',
   name: 'Administrador',
@@ -46,7 +26,7 @@ const mockAdmin = {
 };
 
 // Lista de usuários cadastrados (pacientes)
-let registeredUsers: User[] = [];
+let registeredUsers: (User & { password: string })[] = [];
 
 export const authService = {
   async signIn(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -74,10 +54,12 @@ export const authService = {
       (p) => p.email === credentials.email
     );
     if (patient) {
-      // Para pacientes, a senha padrão é 123456
-      if (credentials.password === '123456') {
+      // Verifica a senha do paciente
+      if (credentials.password === patient.password) {
+        // Remove a senha do objeto antes de retornar
+        const { password, ...patientWithoutPassword } = patient;
         return {
-          user: patient,
+          user: patientWithoutPassword,
           token: `patient-token-${patient.id}`,
         };
       }
@@ -97,7 +79,7 @@ export const authService = {
     }
 
     // Cria um novo paciente
-    const newPatient: User = {
+    const newPatient: User & { password: string } = {
       id: `patient-${registeredUsers.length + 1}`,
       name: data.name,
       email: data.email,
@@ -105,6 +87,7 @@ export const authService = {
       image: `https://randomuser.me/api/portraits/${registeredUsers.length % 2 === 0 ? 'men' : 'women'}/${
         registeredUsers.length + 1
       }.jpg`,
+      password: data.password,
     };
 
     registeredUsers.push(newPatient);
@@ -112,8 +95,10 @@ export const authService = {
     // Salva a lista atualizada de usuários
     await AsyncStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registeredUsers));
 
+    // Remove a senha do objeto antes de retornar
+    const { password, ...patientWithoutPassword } = newPatient;
     return {
-      user: newPatient,
+      user: patientWithoutPassword,
       token: `patient-token-${newPatient.id}`,
     };
   },
@@ -143,7 +128,8 @@ export const authService = {
   },
 
   async getAllDoctors(): Promise<User[]> {
-    return mockDoctors;
+    // DEPRECATED: Use authApiService.getAllDoctors() instead
+    return [];
   },
 
   async getPatients(): Promise<User[]> {
